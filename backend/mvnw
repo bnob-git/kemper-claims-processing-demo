@@ -1,0 +1,37 @@
+#!/bin/sh
+# Maven Wrapper script
+# Downloads and runs Maven if not available locally
+
+set -e
+
+MAVEN_WRAPPER_JAR=".mvn/wrapper/maven-wrapper.jar"
+MAVEN_WRAPPER_PROPERTIES=".mvn/wrapper/maven-wrapper.properties"
+
+# Find project base dir
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+cd "$SCRIPT_DIR"
+
+if [ -f "$MAVEN_WRAPPER_PROPERTIES" ]; then
+    DIST_URL=$(grep 'distributionUrl' "$MAVEN_WRAPPER_PROPERTIES" | cut -d'=' -f2-)
+fi
+
+MAVEN_HOME="$HOME/.m2/wrapper/dists/apache-maven-3.9.6"
+MAVEN_CMD="$MAVEN_HOME/bin/mvn"
+
+if [ ! -f "$MAVEN_CMD" ]; then
+    echo "Downloading Maven..."
+    mkdir -p "$MAVEN_HOME"
+    TMPFILE=$(mktemp /tmp/maven-XXXXXX.zip)
+    curl -sL "$DIST_URL" -o "$TMPFILE"
+    unzip -qo "$TMPFILE" -d "$HOME/.m2/wrapper/dists/"
+    # Maven zip extracts with a directory inside
+    EXTRACTED=$(ls -d "$HOME/.m2/wrapper/dists/apache-maven-"*/ 2>/dev/null | head -1)
+    if [ -n "$EXTRACTED" ] && [ "$EXTRACTED" != "$MAVEN_HOME/" ]; then
+        rm -rf "$MAVEN_HOME"
+        mv "$EXTRACTED" "$MAVEN_HOME"
+    fi
+    rm -f "$TMPFILE"
+    chmod +x "$MAVEN_CMD"
+fi
+
+exec "$MAVEN_CMD" "$@"
