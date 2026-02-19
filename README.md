@@ -6,7 +6,7 @@ A demo-ready prototype for an insurance Property & Casualty (P&C) auto claim pro
 
 | Layer    | Technology                          | Version     |
 |----------|-------------------------------------|-------------|
-| Frontend | Angular + Angular Material          | 17.3.12     |
+| Frontend | Angular + Angular Material          | 19.2.18     |
 | Backend  | Spring Boot + JPA + H2              | 3.2.5       |
 | Tests    | JUnit 5, Karma/Jasmine, Playwright  | —           |
 | CI       | GitHub Actions                      | —           |
@@ -93,7 +93,7 @@ pnc-claims/
 │   ├── src/test/               # JUnit tests
 │   ├── checkstyle.xml
 │   └── pom.xml
-├── frontend/                   # Angular 17 app
+├── frontend/                   # Angular 19 app
 │   ├── src/app/
 │   │   ├── components/         # Dashboard, FNOL, ClaimDetail, Triage, Settlement
 │   │   ├── services/           # ClaimsService (HTTP client)
