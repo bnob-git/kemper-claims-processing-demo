@@ -104,10 +104,6 @@ export class FnolFormComponent implements OnInit {
   fnolForm!: FormGroup;
   policies: Policy[] = [];
 
-  // INTENTIONAL LINT ISSUE: console.log usage (eslint no-console rule)
-  // INTENTIONAL LINT ISSUE: unused variable (eslint no-unused-vars)
-  private debugMode = true;
-
   constructor(
     private fb: FormBuilder,
     private claimsService: ClaimsService,
@@ -147,9 +143,6 @@ export class FnolFormComponent implements OnInit {
         severityScore: formValue.severityScore || 0
       };
 
-      // INTENTIONAL LINT: console.log will be flagged by eslint no-console rule
-      console.log('Submitting FNOL:', payload);
-
       this.claimsService.createClaim(payload).subscribe({
         next: (claim) => {
           this.snackBar.open(`Claim ${claim.claimNumber} created successfully!`, 'Close', {
@@ -157,8 +150,7 @@ export class FnolFormComponent implements OnInit {
           });
           this.router.navigate(['/claims', claim.id]);
         },
-        error: (err) => {
-          console.log('FNOL submission error:', err);
+        error: () => {
           this.snackBar.open('Error creating claim. Please try again.', 'Close', {
             duration: 5000
           });
