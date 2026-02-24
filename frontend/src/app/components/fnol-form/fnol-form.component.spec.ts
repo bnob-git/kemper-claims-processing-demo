@@ -64,7 +64,6 @@ describe('FnolFormComponent', () => {
     component = fixture.componentInstance;
     claimsService = TestBed.inject(ClaimsService) as jasmine.SpyObj<ClaimsService>;
     router = TestBed.inject(Router) as jasmine.SpyObj<Router>;
-    snackBar = TestBed.inject(MatSnackBar) as jasmine.SpyObj<MatSnackBar>;
     fixture.detectChanges();
   });
 
