@@ -1,12 +1,12 @@
 import { TestBed } from '@angular/core/testing';
-import { HttpClientTestingModule } from '@angular/common/http/testing';
-import { RouterTestingModule } from '@angular/router/testing';
+import { provideHttpClientTesting } from '@angular/common/http/testing';
+import { provideRouter } from '@angular/router';
 import { NoopAnimationsModule } from '@angular/platform-browser/animations';
 import { FnolFormComponent } from './fnol-form.component';
 import { ClaimsService } from '../../services/claims.service';
-import { Router } from '@angular/router';
 import { of, throwError } from 'rxjs';
 import { MatSnackBar } from '@angular/material/snack-bar';
+import { provideHttpClient, withInterceptorsFromDi } from '@angular/common/http';
 
 describe('FnolFormComponent', () => {
   let claimsService: jasmine.SpyObj<ClaimsService>;
@@ -32,16 +32,15 @@ describe('FnolFormComponent', () => {
     claimsSpy.createClaim.and.returnValue(of(mockClaimResponse));
 
     await TestBed.configureTestingModule({
-      imports: [
-        FnolFormComponent,
-        HttpClientTestingModule,
-        RouterTestingModule,
-        NoopAnimationsModule
-      ],
-      providers: [
-        { provide: ClaimsService, useValue: claimsSpy }
-      ]
-    }).compileComponents();
+    imports: [FnolFormComponent,
+        NoopAnimationsModule],
+    providers: [
+        { provide: ClaimsService, useValue: claimsSpy },
+        provideHttpClient(withInterceptorsFromDi()),
+        provideHttpClientTesting(),
+        provideRouter([])
+    ]
+}).compileComponents();
 
     claimsService = TestBed.inject(ClaimsService) as jasmine.SpyObj<ClaimsService>;
   });

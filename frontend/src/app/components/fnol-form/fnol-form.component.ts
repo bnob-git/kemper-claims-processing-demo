@@ -15,14 +15,13 @@ import { ClaimsService } from '../../services/claims.service';
 import { Policy } from '../../models/claim.model';
 
 @Component({
-  selector: 'app-fnol-form',
-  standalone: true,
-  imports: [
-    CommonModule, ReactiveFormsModule, MatCardModule, MatFormFieldModule,
-    MatInputModule, MatSelectModule, MatButtonModule, MatDatepickerModule,
-    MatNativeDateModule, MatSnackBarModule, MatIconModule
-  ],
-  template: `
+    selector: 'app-fnol-form',
+    imports: [
+        CommonModule, ReactiveFormsModule, MatCardModule, MatFormFieldModule,
+        MatInputModule, MatSelectModule, MatButtonModule, MatDatepickerModule,
+        MatNativeDateModule, MatSnackBarModule, MatIconModule
+    ],
+    template: `
     <h2>First Notice of Loss (FNOL)</h2>
 
     <mat-card>
@@ -95,7 +94,7 @@ import { Policy } from '../../models/claim.model';
       </mat-card-content>
     </mat-card>
   `,
-  styles: [`
+    styles: [`
     mat-card { max-width: 800px; }
     mat-form-field { width: 100%; }
   `]
