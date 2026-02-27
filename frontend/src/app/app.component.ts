@@ -6,10 +6,9 @@ import { MatIconModule } from '@angular/material/icon';
 import { MatMenuModule } from '@angular/material/menu';
 
 @Component({
-  selector: 'app-root',
-  standalone: true,
-  imports: [RouterOutlet, RouterLink, MatToolbarModule, MatButtonModule, MatIconModule, MatMenuModule],
-  template: `
+    selector: 'app-root',
+    imports: [RouterOutlet, RouterLink, MatToolbarModule, MatButtonModule, MatIconModule, MatMenuModule],
+    template: `
     <mat-toolbar color="primary">
       <mat-icon>shield</mat-icon>
       <span style="margin-left: 8px; font-weight: 500;">PNC Claims Portal</span>
@@ -33,7 +32,7 @@ import { MatMenuModule } from '@angular/material/menu';
       <router-outlet></router-outlet>
     </div>
   `,
-  styles: [`
+    styles: [`
     .spacer { flex: 1 1 auto; }
     .container { max-width: 1200px; margin: 24px auto; padding: 0 24px; }
   `]

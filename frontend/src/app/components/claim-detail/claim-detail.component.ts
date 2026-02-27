@@ -19,15 +19,14 @@ import { ClaimsService } from '../../services/claims.service';
 import { Claim, ClaimEvent, Assignment, DocumentMetadata, Payment } from '../../models/claim.model';
 
 @Component({
-  selector: 'app-claim-detail',
-  standalone: true,
-  imports: [
-    CommonModule, RouterLink, MatCardModule, MatButtonModule, MatIconModule,
-    MatChipsModule, MatDividerModule, MatListModule, MatTabsModule,
-    MatTableModule, MatDialogModule, MatFormFieldModule, MatInputModule,
-    MatSelectModule, MatSnackBarModule, ReactiveFormsModule
-  ],
-  template: `
+    selector: 'app-claim-detail',
+    imports: [
+        CommonModule, RouterLink, MatCardModule, MatButtonModule, MatIconModule,
+        MatChipsModule, MatDividerModule, MatListModule, MatTabsModule,
+        MatTableModule, MatDialogModule, MatFormFieldModule, MatInputModule,
+        MatSelectModule, MatSnackBarModule, ReactiveFormsModule
+    ],
+    template: `
     <div *ngIf="claim">
       <div style="display: flex; align-items: center; gap: 16px; margin-bottom: 16px;">
         <button mat-icon-button routerLink="/dashboard"><mat-icon>arrow_back</mat-icon></button>
@@ -198,7 +197,7 @@ import { Claim, ClaimEvent, Assignment, DocumentMetadata, Payment } from '../../
       </mat-tab-group>
     </div>
   `,
-  styles: [`
+    styles: [`
     .info-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; padding: 8px 0; }
     .info-grid div { padding: 4px 0; }
     table { width: 100%; }

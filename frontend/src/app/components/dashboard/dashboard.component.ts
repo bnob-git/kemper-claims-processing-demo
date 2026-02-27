@@ -12,13 +12,12 @@ import { ClaimsService } from '../../services/claims.service';
 import { Claim } from '../../models/claim.model';
 
 @Component({
-  selector: 'app-dashboard',
-  standalone: true,
-  imports: [
-    CommonModule, RouterLink, MatTableModule, MatButtonModule,
-    MatIconModule, MatSelectModule, MatFormFieldModule, MatCardModule, FormsModule
-  ],
-  template: `
+    selector: 'app-dashboard',
+    imports: [
+        CommonModule, RouterLink, MatTableModule, MatButtonModule,
+        MatIconModule, MatSelectModule, MatFormFieldModule, MatCardModule, FormsModule
+    ],
+    template: `
     <h2>Claims Dashboard</h2>
 
     <mat-card style="margin-bottom: 24px;">
@@ -90,7 +89,7 @@ import { Claim } from '../../models/claim.model';
       <tr mat-row *matRowDef="let row; columns: displayedColumns;" style="cursor: pointer;"></tr>
     </table>
   `,
-  styles: [`
+    styles: [`
     table { width: 100%; }
     .mat-mdc-row:hover { background-color: #f5f5f5; }
     h2 { margin-bottom: 16px; }

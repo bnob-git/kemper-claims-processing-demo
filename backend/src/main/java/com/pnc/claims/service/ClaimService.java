@@ -7,7 +7,6 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
-import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -23,8 +22,6 @@ public class ClaimService {
     private final PaymentRepository paymentRepository;
     private final UserRepository userRepository;
 
-    // INTENTIONAL CODE SMELL: unused variable (checkstyle will flag this)
-    private String lastProcessedClaimId = null;
     private static final String STATUS_OPEN = "OPEN";
 
     public ClaimService(ClaimRepository claimRepository,
@@ -114,12 +111,6 @@ public class ClaimService {
      * - COLLISION with severity >= 7 → SENIOR_ADJUSTER
      * - THEFT (any severity) → SENIOR_ADJUSTER
      * - Everything else → ADJUSTER
-     *
-     * INTENTIONAL BUG: The condition for THEFT is incorrectly checking for
-     * "Theft" (capitalized) instead of "THEFT" (uppercase enum). This means
-     * theft claims may be incorrectly assigned to a regular adjuster instead
-     * of a senior adjuster. The seed data uses uppercase "THEFT" so this
-     * bug is triggered on real claim data.
      */
     @Transactional
     public Assignment autoAssignClaim(Long claimId) {
@@ -128,11 +119,10 @@ public class ClaimService {
         String requiredRole;
         String reason;
 
-        // BUG: "Theft" should be "THEFT" to match the enum values used in data
         if ("COLLISION".equals(claim.getLossType()) && claim.getSeverityScore() >= 7) {
             requiredRole = "SENIOR_ADJUSTER";
             reason = "Collision with severity >= 7";
-        } else if ("Theft".equals(claim.getLossType())) {
+        } else if ("THEFT".equals(claim.getLossType())) {
             requiredRole = "SENIOR_ADJUSTER";
             reason = "Theft claim";
         } else {
@@ -174,54 +164,41 @@ public class ClaimService {
 
     /**
      * Calculate and set reserve for a claim.
-     *
-     * INTENTIONAL BUG: Reserve calculation uses floating-point arithmetic
-     * instead of BigDecimal for the intermediate calculation, causing
-     * rounding errors. For example, severity 7 with base $1000:
-     * double: 7 * 1000 * 1.15 = 8049.999... which truncates incorrectly.
-     * Should use BigDecimal throughout.
      */
     @Transactional
     public Claim setReserveDecision(Long claimId, String decision, BigDecimal requestedAmount) {
         Claim claim = getClaimById(claimId);
 
         if ("APPROVE".equalsIgnoreCase(decision)) {
-            BigDecimal reserveAmount;
-            if (requestedAmount != null) {
-                reserveAmount = requestedAmount;
-            } else {
-                // BUG: using double arithmetic causes rounding issues
-                double baseAmount = 1000.0;
-                double severityMultiplier = claim.getSeverityScore();
-                double adjustmentFactor = 1.15;
-                double calculated = severityMultiplier * baseAmount * adjustmentFactor;
-                // This truncation loses precision
-                reserveAmount = BigDecimal.valueOf((long) calculated);
-            }
+            BigDecimal reserveAmount = requestedAmount != null
+                    ? requestedAmount : calculateReserveAmount(claim);
             claim.setReserveAmount(reserveAmount);
             claim.setStatus("RESERVE_SET");
-
-            ClaimEvent event = new ClaimEvent();
-            event.setClaimId(claimId);
-            event.setEventType("STATUS_CHANGE");
-            event.setOldStatus("UNDER_INVESTIGATION");
-            event.setNewStatus("RESERVE_SET");
-            event.setNotes("Reserve approved: $" + reserveAmount);
-            event.setCreatedBy("system");
-            claimEventRepository.save(event);
+            logEvent(claimId, "UNDER_INVESTIGATION", "RESERVE_SET", "Reserve approved: $" + reserveAmount);
         } else {
             claim.setStatus("DENIED");
-            ClaimEvent event = new ClaimEvent();
-            event.setClaimId(claimId);
-            event.setEventType("STATUS_CHANGE");
-            event.setOldStatus(claim.getStatus());
-            event.setNewStatus("DENIED");
-            event.setNotes("Reserve denied");
-            event.setCreatedBy("system");
-            claimEventRepository.save(event);
+            logEvent(claimId, claim.getStatus(), "DENIED", "Reserve denied");
         }
 
         return claimRepository.save(claim);
+    }
+
+    private BigDecimal calculateReserveAmount(Claim claim) {
+        BigDecimal baseAmount = new BigDecimal("1000");
+        BigDecimal severityMultiplier = BigDecimal.valueOf(claim.getSeverityScore());
+        BigDecimal adjustmentFactor = new BigDecimal("1.15");
+        return severityMultiplier.multiply(baseAmount).multiply(adjustmentFactor);
+    }
+
+    private void logEvent(Long claimId, String oldStatus, String newStatus, String notes) {
+        ClaimEvent event = new ClaimEvent();
+        event.setClaimId(claimId);
+        event.setEventType("STATUS_CHANGE");
+        event.setOldStatus(oldStatus);
+        event.setNewStatus(newStatus);
+        event.setNotes(notes);
+        event.setCreatedBy("system");
+        claimEventRepository.save(event);
     }
 
     @Transactional

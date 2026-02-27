@@ -14,14 +14,13 @@ import { ClaimsService } from '../../services/claims.service';
 import { Claim, AppUser } from '../../models/claim.model';
 
 @Component({
-  selector: 'app-triage',
-  standalone: true,
-  imports: [
-    CommonModule, RouterLink, MatCardModule, MatButtonModule, MatIconModule,
-    MatSelectModule, MatFormFieldModule, MatInputModule, MatSnackBarModule,
-    MatRadioModule, FormsModule
-  ],
-  template: `
+    selector: 'app-triage',
+    imports: [
+        CommonModule, RouterLink, MatCardModule, MatButtonModule, MatIconModule,
+        MatSelectModule, MatFormFieldModule, MatInputModule, MatSnackBarModule,
+        MatRadioModule, FormsModule
+    ],
+    template: `
     <div *ngIf="claim">
       <div style="display: flex; align-items: center; gap: 16px; margin-bottom: 16px;">
         <button mat-icon-button [routerLink]="['/claims', claim.id]"><mat-icon>arrow_back</mat-icon></button>
@@ -101,7 +100,7 @@ import { Claim, AppUser } from '../../models/claim.model';
       </mat-card>
     </div>
   `,
-  styles: [`h2 { margin: 0; }`]
+    styles: [`h2 { margin: 0; }`]
 })
 export class TriageComponent implements OnInit {
   claim: Claim | null = null;
