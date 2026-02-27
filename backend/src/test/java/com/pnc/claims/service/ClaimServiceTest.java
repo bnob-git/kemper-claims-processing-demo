@@ -2,8 +2,6 @@ package com.pnc.claims.service;
 
 import com.pnc.claims.entity.*;
 import com.pnc.claims.repository.*;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -93,13 +91,7 @@ class ClaimServiceTest {
         assertEquals("ADJUSTER", adjuster.getRole());
     }
 
-    /**
-     * This test exposes the intentional triage bug: THEFT claims should be
-     * assigned to SENIOR_ADJUSTER, but the code compares against "Theft"
-     * instead of "THEFT".
-     */
     @Test
-    @Tag("known-defect")
     void testTriageAssignment_Theft_ShouldAssignSeniorAdjuster() {
         Map<String, Object> request = new HashMap<>();
         request.put("policyId", 3L);
@@ -114,8 +106,6 @@ class ClaimServiceTest {
         Assignment assignment = claimService.autoAssignClaim(claim.getId());
 
         AppUser adjuster = userRepository.findById(assignment.getAdjusterId()).orElseThrow();
-        // BUG: This assertion will FAIL because the triage rule checks "Theft" != "THEFT"
-        // The theft claim gets incorrectly assigned to ADJUSTER instead of SENIOR_ADJUSTER
         assertEquals("SENIOR_ADJUSTER", adjuster.getRole(),
                 "THEFT claims should be assigned to a Senior Adjuster");
     }
@@ -129,13 +119,7 @@ class ClaimServiceTest {
         assertEquals(new BigDecimal("5000.00"), updated.getReserveAmount());
     }
 
-    /**
-     * This test exposes the intentional reserve calculation rounding bug.
-     * When no amount is provided, the auto-calculation uses double arithmetic,
-     * which can produce rounding errors.
-     */
     @Test
-    @Tag("known-defect")
     void testReserveDecision_AutoCalculation_RoundingBug() {
         // Create a claim with severity 7
         Map<String, Object> request = new HashMap<>();
@@ -150,15 +134,11 @@ class ClaimServiceTest {
         Claim claim = claimService.createClaim(request);
         Claim updated = claimService.setReserveDecision(claim.getId(), "APPROVE", null);
 
-        // Expected: 7 * 1000 * 1.15 = 8050.00
-        // BUG: due to double arithmetic and (long) cast, result is 8050 (happens to work for 7)
-        // but for severity 3: 3 * 1000 * 1.15 = 3449.9999... → 3449 instead of 3450
-        assertEquals(new BigDecimal("8050"), updated.getReserveAmount(),
+        assertEquals(new BigDecimal("8050.00"), updated.getReserveAmount(),
                 "Reserve should be severity * 1000 * 1.15");
     }
 
     @Test
-    @Tag("known-defect")
     void testReserveDecision_AutoCalculation_RoundingBug_Severity3() {
         Map<String, Object> request = new HashMap<>();
         request.put("policyId", 2L);
@@ -172,10 +152,8 @@ class ClaimServiceTest {
         Claim claim = claimService.createClaim(request);
         Claim updated = claimService.setReserveDecision(claim.getId(), "APPROVE", null);
 
-        // Expected: 3 * 1000 * 1.15 = 3450.00
-        // BUG: double arithmetic gives 3449.9999... → (long) cast = 3449
-        assertEquals(new BigDecimal("3450"), updated.getReserveAmount(),
-                "Reserve should be 3450 but rounding bug produces 3449");
+        assertEquals(new BigDecimal("3450.00"), updated.getReserveAmount(),
+                "Reserve should be 3450");
     }
 
     @Test
@@ -216,5 +194,75 @@ class ClaimServiceTest {
         Claim closed = claimService.closeClaim(3L, false);
         assertEquals("CLOSED", closed.getStatus());
         assertFalse(closed.getSubrogationFlag());
+    }
+
+    // ---- TEST-001: New regression tests ----
+
+    @Test
+    void testCreateClaim_MissingRequiredFields_ShouldThrow() {
+        Map<String, Object> request = new HashMap<>();
+        // Missing policyId, lossType, etc.
+        assertThrows(RuntimeException.class, () -> claimService.createClaim(request));
+    }
+
+    @Test
+    void testReserveDecision_Deny_ShouldSetStatusDenied() {
+        Claim updated = claimService.setReserveDecision(1L, "DENY", null);
+        assertEquals("DENIED", updated.getStatus());
+        assertNull(updated.getReserveAmount());
+    }
+
+    @Test
+    void testIssuePayment_OnNonReserveSetClaim_ShouldStillProcess() {
+        // Claim 1 is OPEN, not RESERVE_SET — service currently allows it
+        // This tests the actual behavior of the service
+        Map<String, Object> payRequest = new HashMap<>();
+        payRequest.put("amount", "1000.00");
+        Payment payment = claimService.issuePayment(1L, payRequest);
+        assertNotNull(payment.getId());
+        assertEquals("SETTLED", claimService.getClaimById(1L).getStatus());
+    }
+
+    @Test
+    void testCloseClaim_OnNonSettledClaim_ShouldStillProcess() {
+        // Claim 1 is OPEN, not SETTLED — service currently allows it
+        Claim closed = claimService.closeClaim(1L, false);
+        assertEquals("CLOSED", closed.getStatus());
+    }
+
+    @Test
+    void testManualAssign_InvalidAdjusterId_ShouldThrow() {
+        assertThrows(RuntimeException.class,
+                () -> claimService.manualAssignClaim(1L, 9999L, "test"));
+    }
+
+    @Test
+    void testGetClaimById_NonExistent_ShouldThrow() {
+        assertThrows(RuntimeException.class, () -> claimService.getClaimById(9999L));
+    }
+
+    @Test
+    void testGetClaimsByStatus() {
+        var openClaims = claimService.getClaimsByStatus("OPEN");
+        assertFalse(openClaims.isEmpty());
+        openClaims.forEach(c -> assertEquals("OPEN", c.getStatus()));
+    }
+
+    @Test
+    void testAutoAssign_WeatherClaim_ShouldAssignAdjuster() {
+        Map<String, Object> request = new HashMap<>();
+        request.put("policyId", 4L);
+        request.put("lossType", "WEATHER");
+        request.put("severityScore", 3);
+        request.put("lossDate", "2024-10-07");
+        request.put("lossDescription", "Hail");
+        request.put("claimantName", "Test User");
+        request.put("claimantPhone", "555-0007");
+
+        Claim claim = claimService.createClaim(request);
+        Assignment assignment = claimService.autoAssignClaim(claim.getId());
+
+        AppUser adjuster = userRepository.findById(assignment.getAdjusterId()).orElseThrow();
+        assertEquals("ADJUSTER", adjuster.getRole());
     }
 }
