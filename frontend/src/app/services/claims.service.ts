@@ -1,7 +1,7 @@
 import { Injectable } from '@angular/core';
-import { HttpClient } from '@angular/common/http';
+import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable } from 'rxjs';
-import { Claim, ClaimEvent, Assignment, Payment, DocumentMetadata, Policy, AppUser } from '../models/claim.model';
+import { Claim, ClaimEvent, Assignment, Payment, DocumentMetadata, Policy, AppUser, ClaimFilter } from '../models/claim.model';
 
 @Injectable({ providedIn: 'root' })
 export class ClaimsService {
@@ -19,9 +19,28 @@ export class ClaimsService {
   }
 
   // Claims
-  getClaims(status?: string): Observable<Claim[]> {
-    const params = status ? `?status=${status}` : '';
-    return this.http.get<Claim[]>(`${this.baseUrl}/claims${params}`);
+  getClaims(filter?: ClaimFilter): Observable<Claim[]> {
+    let params = new HttpParams();
+    if (filter) {
+      if (filter.status) {
+        params = params.set('status', filter.status);
+      }
+      if (filter.search) {
+        params = params.set('search', filter.search);
+      }
+      if (filter.lossTypes && filter.lossTypes.length > 0) {
+        for (const lt of filter.lossTypes) {
+          params = params.append('lossTypes', lt);
+        }
+      }
+      if (filter.lossDateFrom) {
+        params = params.set('lossDateFrom', filter.lossDateFrom);
+      }
+      if (filter.lossDateTo) {
+        params = params.set('lossDateTo', filter.lossDateTo);
+      }
+    }
+    return this.http.get<Claim[]>(`${this.baseUrl}/claims`, { params });
   }
 
   getClaim(id: number): Observable<Claim> {

@@ -10,7 +10,9 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -216,5 +218,137 @@ class ClaimServiceTest {
         Claim closed = claimService.closeClaim(3L, false);
         assertEquals("CLOSED", closed.getStatus());
         assertFalse(closed.getSubrogationFlag());
+    }
+
+    // --- Advanced Filtering Tests ---
+
+    @Test
+    void testSearchClaims_NoFilters_ReturnsAll() {
+        List<Claim> results = claimService.searchClaims(
+                null, null, null, null, null);
+        assertEquals(5, results.size(),
+                "No filters should return all seeded claims");
+    }
+
+    @Test
+    void testSearchClaims_ByStatus() {
+        List<Claim> results = claimService.searchClaims(
+                "OPEN", null, null, null, null);
+        assertFalse(results.isEmpty());
+        for (Claim c : results) {
+            assertEquals("OPEN", c.getStatus());
+        }
+    }
+
+    @Test
+    void testSearchClaims_BySearchText_ClaimNumber() {
+        List<Claim> results = claimService.searchClaims(
+                null, "CLM-2024-0001", null, null, null);
+        assertEquals(1, results.size());
+        assertEquals("CLM-2024-0001", results.get(0).getClaimNumber());
+    }
+
+    @Test
+    void testSearchClaims_BySearchText_ClaimantName() {
+        List<Claim> results = claimService.searchClaims(
+                null, "alice", null, null, null);
+        assertFalse(results.isEmpty());
+        assertTrue(results.stream()
+                .anyMatch(c -> c.getClaimantName()
+                        .toLowerCase().contains("alice")));
+    }
+
+    @Test
+    void testSearchClaims_BySearchText_PolicyNumber() {
+        List<Claim> results = claimService.searchClaims(
+                null, "POL-2024-00202", null, null, null);
+        assertEquals(1, results.size());
+        assertEquals("POL-2024-00202",
+                results.get(0).getPolicy().getPolicyNumber());
+    }
+
+    @Test
+    void testSearchClaims_ByLossTypes_Single() {
+        List<Claim> results = claimService.searchClaims(
+                null, null, List.of("THEFT"), null, null);
+        assertFalse(results.isEmpty());
+        for (Claim c : results) {
+            assertEquals("THEFT", c.getLossType());
+        }
+    }
+
+    @Test
+    void testSearchClaims_ByLossTypes_Multiple() {
+        List<Claim> results = claimService.searchClaims(
+                null, null, List.of("THEFT", "WEATHER"),
+                null, null);
+        assertFalse(results.isEmpty());
+        for (Claim c : results) {
+            assertTrue("THEFT".equals(c.getLossType())
+                    || "WEATHER".equals(c.getLossType()));
+        }
+    }
+
+    @Test
+    void testSearchClaims_ByLossDateRange() {
+        LocalDate from = LocalDate.of(2024, 9, 10);
+        LocalDate to = LocalDate.of(2024, 9,12);
+        List<Claim> results = claimService.searchClaims(
+                null, null, null, from, to);
+        assertFalse(results.isEmpty());
+        for (Claim c : results) {
+            assertFalse(c.getLossDate().isBefore(from));
+            assertFalse(c.getLossDate().isAfter(to));
+        }
+    }
+
+    @Test
+    void testSearchClaims_ByLossDateFrom() {
+        LocalDate from = LocalDate.of(2024, 9, 15);
+        List<Claim> results = claimService.searchClaims(
+                null, null, null, from, null);
+        assertFalse(results.isEmpty());
+        for (Claim c : results) {
+            assertFalse(c.getLossDate().isBefore(from));
+        }
+    }
+
+    @Test
+    void testSearchClaims_CombinedFilters_StatusAndLossType() {
+        List<Claim> results = claimService.searchClaims(
+                "OPEN", null, List.of("COLLISION"), null, null);
+        assertFalse(results.isEmpty());
+        for (Claim c : results) {
+            assertEquals("OPEN", c.getStatus());
+            assertEquals("COLLISION", c.getLossType());
+        }
+    }
+
+    @Test
+    void testSearchClaims_CombinedFilters_SearchAndStatus() {
+        List<Claim> results = claimService.searchClaims(
+                "OPEN", "alice", null, null, null);
+        assertEquals(1, results.size());
+        assertEquals("OPEN", results.get(0).getStatus());
+        assertTrue(results.get(0).getClaimantName()
+                .toLowerCase().contains("alice"));
+    }
+
+    @Test
+    void testSearchClaims_NoMatch() {
+        List<Claim> results = claimService.searchClaims(
+                null, "NONEXISTENT_XYZ", null, null, null);
+        assertTrue(results.isEmpty());
+    }
+
+    @Test
+    void testSearchClaims_CaseInsensitiveSearch() {
+        List<Claim> upper = claimService.searchClaims(
+                null, "ALICE", null, null, null);
+        List<Claim> lower = claimService.searchClaims(
+                null, "alice", null, null, null);
+        assertEquals(upper.size(), lower.size(),
+                "Search should be case-insensitive");
+        assertFalse(upper.isEmpty());
     }
 }

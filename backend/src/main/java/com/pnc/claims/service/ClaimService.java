@@ -5,9 +5,15 @@ import com.pnc.claims.repository.*;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import jakarta.persistence.criteria.Join;
+import jakarta.persistence.criteria.JoinType;
+import jakarta.persistence.criteria.Predicate;
+import org.springframework.data.jpa.domain.Specification;
+
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -49,6 +55,58 @@ public class ClaimService {
 
     public List<Claim> getClaimsByStatus(String status) {
         return claimRepository.findByStatus(status);
+    }
+
+    public List<Claim> searchClaims(String status, String search,
+                                    List<String> lossTypes,
+                                    LocalDate lossDateFrom,
+                                    LocalDate lossDateTo) {
+        Specification<Claim> spec = buildFilterSpec(
+                status, search, lossTypes, lossDateFrom, lossDateTo);
+        return claimRepository.findAll(spec);
+    }
+
+    private Specification<Claim> buildFilterSpec(
+            String status, String search,
+            List<String> lossTypes,
+            LocalDate lossDateFrom,
+            LocalDate lossDateTo) {
+        return (root, query, cb) -> {
+            List<Predicate> predicates = new ArrayList<>();
+
+            if (status != null && !status.isBlank()) {
+                predicates.add(cb.equal(root.get("status"), status));
+            }
+
+            if (search != null && !search.isBlank()) {
+                String pattern = "%" + search.toLowerCase() + "%";
+                Join<Object, Object> policyJoin =
+                        root.join("policy", JoinType.LEFT);
+                Predicate searchPred = cb.or(
+                        cb.like(cb.lower(root.get("claimNumber")), pattern),
+                        cb.like(cb.lower(root.get("claimantName")), pattern),
+                        cb.like(cb.lower(policyJoin.get("policyNumber")),
+                                pattern)
+                );
+                predicates.add(searchPred);
+            }
+
+            if (lossTypes != null && !lossTypes.isEmpty()) {
+                predicates.add(root.get("lossType").in(lossTypes));
+            }
+
+            if (lossDateFrom != null) {
+                predicates.add(cb.greaterThanOrEqualTo(
+                        root.get("lossDate"), lossDateFrom));
+            }
+
+            if (lossDateTo != null) {
+                predicates.add(cb.lessThanOrEqualTo(
+                        root.get("lossDate"), lossDateTo));
+            }
+
+            return cb.and(predicates.toArray(new Predicate[0]));
+        };
     }
 
     public Claim getClaimById(Long id) {

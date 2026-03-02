@@ -2,10 +2,12 @@ package com.pnc.claims.controller;
 
 import com.pnc.claims.entity.*;
 import com.pnc.claims.service.ClaimService;
+import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.util.List;
 import java.util.Map;
 
@@ -20,9 +22,25 @@ public class ClaimController {
     }
 
     @GetMapping
-    public List<Claim> getAllClaims(@RequestParam(required = false) String status) {
-        if (status != null && !status.isBlank()) {
-            return claimService.getClaimsByStatus(status);
+    public List<Claim> getAllClaims(
+            @RequestParam(required = false) String status,
+            @RequestParam(required = false) String search,
+            @RequestParam(required = false) List<String> lossTypes,
+            @RequestParam(required = false)
+            @DateTimeFormat(iso = DateTimeFormat.ISO.DATE)
+            LocalDate lossDateFrom,
+            @RequestParam(required = false)
+            @DateTimeFormat(iso = DateTimeFormat.ISO.DATE)
+            LocalDate lossDateTo) {
+        boolean hasAdvancedFilters = search != null
+                || lossTypes != null
+                || lossDateFrom != null
+                || lossDateTo != null;
+        if (hasAdvancedFilters
+                || (status != null && !status.isBlank())) {
+            return claimService.searchClaims(
+                    status, search, lossTypes,
+                    lossDateFrom, lossDateTo);
         }
         return claimService.getAllClaims();
     }
