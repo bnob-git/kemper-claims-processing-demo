@@ -80,3 +80,12 @@ export interface Payment {
   status: string;
   createdBy: string;
 }
+
+export interface NotificationLog {
+  id: number;
+  claimId: number;
+  recipientEmail: string;
+  eventType: string;
+  sentAt: string;
+  message: string;
+}

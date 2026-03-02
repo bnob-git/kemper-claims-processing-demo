@@ -2,6 +2,7 @@ package com.pnc.claims.controller;
 
 import com.pnc.claims.entity.*;
 import com.pnc.claims.service.ClaimService;
+import com.pnc.claims.service.NotificationService;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
 
@@ -14,9 +15,12 @@ import java.util.Map;
 public class ClaimController {
 
     private final ClaimService claimService;
+    private final NotificationService notificationService;
 
-    public ClaimController(ClaimService claimService) {
+    public ClaimController(ClaimService claimService,
+                           NotificationService notificationService) {
         this.claimService = claimService;
+        this.notificationService = notificationService;
     }
 
     @GetMapping
@@ -107,6 +111,14 @@ public class ClaimController {
     public Payment issuePayment(@PathVariable Long id,
                                 @RequestBody Map<String, Object> request) {
         return claimService.issuePayment(id, request);
+    }
+
+    // --- Notifications ---
+
+    @GetMapping("/{id}/notifications")
+    public List<NotificationLog> getNotifications(
+            @PathVariable Long id) {
+        return notificationService.getNotifications(id);
     }
 
     // --- Close ---

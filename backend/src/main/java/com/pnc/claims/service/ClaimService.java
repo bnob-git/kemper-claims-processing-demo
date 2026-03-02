@@ -22,6 +22,7 @@ public class ClaimService {
     private final DocumentMetadataRepository documentMetadataRepository;
     private final PaymentRepository paymentRepository;
     private final UserRepository userRepository;
+    private final NotificationService notificationService;
 
     // INTENTIONAL CODE SMELL: unused variable (checkstyle will flag this)
     private String lastProcessedClaimId = null;
@@ -33,7 +34,8 @@ public class ClaimService {
                         AssignmentRepository assignmentRepository,
                         DocumentMetadataRepository documentMetadataRepository,
                         PaymentRepository paymentRepository,
-                        UserRepository userRepository) {
+                        UserRepository userRepository,
+                        NotificationService notificationService) {
         this.claimRepository = claimRepository;
         this.policyRepository = policyRepository;
         this.claimEventRepository = claimEventRepository;
@@ -41,6 +43,7 @@ public class ClaimService {
         this.documentMetadataRepository = documentMetadataRepository;
         this.paymentRepository = paymentRepository;
         this.userRepository = userRepository;
+        this.notificationService = notificationService;
     }
 
     public List<Claim> getAllClaims() {
@@ -103,6 +106,9 @@ public class ClaimService {
         event.setNotes("Status changed from " + oldStatus + " to " + newStatus);
         event.setCreatedBy(user);
         claimEventRepository.save(event);
+
+        notificationService.notifyStatusChange(
+                saved, oldStatus, newStatus);
 
         return saved;
     }
