@@ -102,7 +102,6 @@ pnc-claims/
 │   ├── .eslintrc.json
 │   ├── angular.json
 │   └── package.json
-├── tickets/                    # Jira-style work tickets (markdown)
 ├── .github/workflows/ci.yml   # GitHub Actions CI
 ├── docker-compose.yml
 ├── Makefile
@@ -162,16 +161,16 @@ This repo contains **seeded defects** designed to be discovered and fixed during
 
 ## Tickets
 
-See the `/tickets` folder for 7 Jira-style work tickets:
-- **BUG-001:** FNOL validation bypass
-- **BUG-002:** Triage theft case mismatch
-- **BUG-003:** Reserve calculation rounding
-- **ENHANCE-001:** Claim search and filtering
-- **ENHANCE-002:** Email notification stubs
-- **UPGRADE-001:** Angular 17 → 19 upgrade
-- **UPGRADE-002:** Dependency updates
-- **TEST-001:** Expand regression test suite
-- **LINT-001:** Fix static analysis issues
+Work items are tracked in Jira (project DEV). See the Jira board for current tickets including:
+- **BUG-001 (DEV-29):** FNOL validation bypass
+- **BUG-002 (DEV-30):** Triage theft case mismatch
+- **BUG-003 (DEV-31):** Reserve calculation rounding
+- **ENHANCE-001 (DEV-32):** Claim search and filtering
+- **ENHANCE-002 (DEV-33):** Email notification stubs
+- **UPGRADE-001 (DEV-36):** Angular 17 → 19 upgrade
+- **UPGRADE-002 (DEV-37):** Dependency updates
+- **TEST-001 (DEV-35):** Expand regression test suite
+- **LINT-001 (DEV-34):** Fix static analysis issues
 
 ## Seed Data
 
