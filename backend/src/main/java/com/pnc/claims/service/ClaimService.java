@@ -2,6 +2,7 @@ package com.pnc.claims.service;
 
 import com.pnc.claims.entity.*;
 import com.pnc.claims.repository.*;
+import com.pnc.claims.repository.ClaimSpecifications;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -22,6 +23,7 @@ public class ClaimService {
     private final DocumentMetadataRepository documentMetadataRepository;
     private final PaymentRepository paymentRepository;
     private final UserRepository userRepository;
+    private final NotificationService notificationService;
 
     // INTENTIONAL CODE SMELL: unused variable (checkstyle will flag this)
     private String lastProcessedClaimId = null;
@@ -33,7 +35,8 @@ public class ClaimService {
                         AssignmentRepository assignmentRepository,
                         DocumentMetadataRepository documentMetadataRepository,
                         PaymentRepository paymentRepository,
-                        UserRepository userRepository) {
+                        UserRepository userRepository,
+                        NotificationService notificationService) {
         this.claimRepository = claimRepository;
         this.policyRepository = policyRepository;
         this.claimEventRepository = claimEventRepository;
@@ -41,6 +44,7 @@ public class ClaimService {
         this.documentMetadataRepository = documentMetadataRepository;
         this.paymentRepository = paymentRepository;
         this.userRepository = userRepository;
+        this.notificationService = notificationService;
     }
 
     public List<Claim> getAllClaims() {
@@ -49,6 +53,15 @@ public class ClaimService {
 
     public List<Claim> getClaimsByStatus(String status) {
         return claimRepository.findByStatus(status);
+    }
+
+    public List<Claim> searchClaims(String status, String search,
+                                     List<String> lossTypes,
+                                     LocalDate lossDateFrom,
+                                     LocalDate lossDateTo) {
+        return claimRepository.findAll(
+                ClaimSpecifications.withFilters(
+                        status, search, lossTypes, lossDateFrom, lossDateTo));
     }
 
     public Claim getClaimById(Long id) {
@@ -103,6 +116,8 @@ public class ClaimService {
         event.setNotes("Status changed from " + oldStatus + " to " + newStatus);
         event.setCreatedBy(user);
         claimEventRepository.save(event);
+
+        notificationService.notifyStatusChange(saved, oldStatus, newStatus);
 
         return saved;
     }
@@ -209,16 +224,23 @@ public class ClaimService {
             event.setNotes("Reserve approved: $" + reserveAmount);
             event.setCreatedBy("system");
             claimEventRepository.save(event);
+
+            notificationService.notifyStatusChange(
+                    claim, "UNDER_INVESTIGATION", "RESERVE_SET");
         } else {
+            String oldStatus = claim.getStatus();
             claim.setStatus("DENIED");
             ClaimEvent event = new ClaimEvent();
             event.setClaimId(claimId);
             event.setEventType("STATUS_CHANGE");
-            event.setOldStatus(claim.getStatus());
+            event.setOldStatus(oldStatus);
             event.setNewStatus("DENIED");
             event.setNotes("Reserve denied");
             event.setCreatedBy("system");
             claimEventRepository.save(event);
+
+            notificationService.notifyStatusChange(
+                    claim, oldStatus, "DENIED");
         }
 
         return claimRepository.save(claim);
@@ -265,6 +287,9 @@ public class ClaimService {
         event.setCreatedBy("system");
         claimEventRepository.save(event);
 
+        notificationService.notifyStatusChange(
+                claim, "RESERVE_SET", "SETTLED");
+
         return paymentRepository.save(payment);
     }
 
@@ -282,6 +307,9 @@ public class ClaimService {
         event.setNotes("Claim closed" + (subrogation ? " with subrogation" : ""));
         event.setCreatedBy("system");
         claimEventRepository.save(event);
+
+        notificationService.notifyStatusChange(
+                claim, "SETTLED", "CLOSED");
 
         return claimRepository.save(claim);
     }

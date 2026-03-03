@@ -1,11 +1,15 @@
 package com.pnc.claims.controller;
 
 import com.pnc.claims.entity.*;
+import com.pnc.claims.entity.NotificationLog;
 import com.pnc.claims.service.ClaimService;
+import com.pnc.claims.service.NotificationService;
+import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.util.List;
 import java.util.Map;
 
@@ -14,15 +18,32 @@ import java.util.Map;
 public class ClaimController {
 
     private final ClaimService claimService;
+    private final NotificationService notificationService;
 
-    public ClaimController(ClaimService claimService) {
+    public ClaimController(ClaimService claimService,
+                           NotificationService notificationService) {
         this.claimService = claimService;
+        this.notificationService = notificationService;
     }
 
     @GetMapping
-    public List<Claim> getAllClaims(@RequestParam(required = false) String status) {
-        if (status != null && !status.isBlank()) {
-            return claimService.getClaimsByStatus(status);
+    public List<Claim> getAllClaims(
+            @RequestParam(required = false) String status,
+            @RequestParam(required = false) String search,
+            @RequestParam(required = false) List<String> lossType,
+            @RequestParam(required = false)
+            @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate lossDateFrom,
+            @RequestParam(required = false)
+            @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate lossDateTo) {
+
+        boolean hasAdvancedFilters = (search != null && !search.isBlank())
+                || (lossType != null && !lossType.isEmpty())
+                || lossDateFrom != null
+                || lossDateTo != null;
+
+        if (hasAdvancedFilters || (status != null && !status.isBlank())) {
+            return claimService.searchClaims(
+                    status, search, lossType, lossDateFrom, lossDateTo);
         }
         return claimService.getAllClaims();
     }
@@ -107,6 +128,13 @@ public class ClaimController {
     public Payment issuePayment(@PathVariable Long id,
                                 @RequestBody Map<String, Object> request) {
         return claimService.issuePayment(id, request);
+    }
+
+    // --- Notifications ---
+
+    @GetMapping("/{id}/notifications")
+    public List<NotificationLog> getNotifications(@PathVariable Long id) {
+        return notificationService.getNotificationsForClaim(id);
     }
 
     // --- Close ---
