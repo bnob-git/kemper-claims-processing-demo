@@ -11,6 +11,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -30,6 +31,15 @@ class ClaimServiceTest {
 
     @Autowired
     private AssignmentRepository assignmentRepository;
+
+    @Autowired
+    private ClaimEventRepository claimEventRepository;
+
+    @Autowired
+    private DocumentMetadataRepository documentMetadataRepository;
+
+    @Autowired
+    private PaymentRepository paymentRepository;
 
     @Test
     void testCreateClaimFromFnol() {
@@ -216,5 +226,121 @@ class ClaimServiceTest {
         Claim closed = claimService.closeClaim(3L, false);
         assertEquals("CLOSED", closed.getStatus());
         assertFalse(closed.getSubrogationFlag());
+    }
+
+    // --- Additional tests ---
+
+    @Test
+    void testGetAllClaims() {
+        List<Claim> claims = claimService.getAllClaims();
+        assertNotNull(claims);
+        assertFalse(claims.isEmpty(), "Seeded data should contain claims");
+    }
+
+    @Test
+    void testGetClaimsByStatus() {
+        List<Claim> openClaims = claimService.getClaimsByStatus("OPEN");
+        assertNotNull(openClaims);
+        for (Claim c : openClaims) {
+            assertEquals("OPEN", c.getStatus());
+        }
+    }
+
+    @Test
+    void testGetClaimById_NotFound() {
+        assertThrows(RuntimeException.class, () -> claimService.getClaimById(9999L));
+    }
+
+    @Test
+    void testUpdateClaimStatus() {
+        Claim updated = claimService.updateClaimStatus(1L, "UNDER_INVESTIGATION", "testuser");
+        assertEquals("UNDER_INVESTIGATION", updated.getStatus());
+
+        List<ClaimEvent> events = claimService.getClaimEvents(1L);
+        boolean found = events.stream()
+                .anyMatch(e -> "UNDER_INVESTIGATION".equals(e.getNewStatus())
+                        && "testuser".equals(e.getCreatedBy()));
+        assertTrue(found, "Should have a STATUS_CHANGE event for the update");
+    }
+
+    @Test
+    void testManualAssignClaim() {
+        // Use claim 1 and user 2 (an adjuster from seed data)
+        Assignment assignment = claimService.manualAssignClaim(1L, 2L, "Test manual assign");
+        assertNotNull(assignment.getId());
+        assertEquals("MANUAL", assignment.getAssignmentType());
+        assertEquals(2L, assignment.getAdjusterId());
+        assertEquals("Test manual assign", assignment.getNotes());
+    }
+
+    @Test
+    void testManualAssignClaim_UserNotFound() {
+        assertThrows(RuntimeException.class,
+                () -> claimService.manualAssignClaim(1L, 9999L, "Should fail"));
+    }
+
+    @Test
+    void testAddDocument() {
+        Map<String, String> docRequest = new HashMap<>();
+        docRequest.put("fileName", "test-report.pdf");
+        docRequest.put("documentType", "POLICE_REPORT");
+        docRequest.put("uploadedBy", "testuser");
+        docRequest.put("notes", "Test document");
+
+        DocumentMetadata doc = claimService.addDocument(1L, docRequest);
+        assertNotNull(doc.getId());
+        assertEquals("test-report.pdf", doc.getFileName());
+        assertEquals("POLICE_REPORT", doc.getDocumentType());
+        assertEquals("testuser", doc.getUploadedBy());
+    }
+
+    @Test
+    void testReserveDecision_Deny() {
+        Claim denied = claimService.setReserveDecision(1L, "DENY", null);
+        assertEquals("DENIED", denied.getStatus());
+    }
+
+    @Test
+    void testGetClaimEvents() {
+        // Claim 1 should have at least the initial FNOL event from seed data
+        List<ClaimEvent> events = claimService.getClaimEvents(1L);
+        assertNotNull(events);
+        assertFalse(events.isEmpty(), "Claim should have events from seed data");
+    }
+
+    @Test
+    void testGetClaimAssignments() {
+        // Create an assignment first, then retrieve
+        claimService.autoAssignClaim(1L);
+        List<Assignment> assignments = claimService.getClaimAssignments(1L);
+        assertNotNull(assignments);
+        assertFalse(assignments.isEmpty());
+    }
+
+    @Test
+    void testGetClaimDocuments() {
+        // Add a document first, then retrieve
+        Map<String, String> docRequest = new HashMap<>();
+        docRequest.put("fileName", "evidence.jpg");
+        docRequest.put("documentType", "PHOTO");
+        docRequest.put("uploadedBy", "testuser");
+        docRequest.put("notes", "");
+        claimService.addDocument(1L, docRequest);
+
+        List<DocumentMetadata> docs = claimService.getClaimDocuments(1L);
+        assertNotNull(docs);
+        assertFalse(docs.isEmpty());
+    }
+
+    @Test
+    void testGetClaimPayments() {
+        // Issue a payment first using claim 3 (RESERVE_SET status)
+        Map<String, Object> payRequest = new HashMap<>();
+        payRequest.put("amount", "2500.00");
+        claimService.issuePayment(3L, payRequest);
+
+        List<Payment> payments = claimService.getClaimPayments(3L);
+        assertNotNull(payments);
+        assertFalse(payments.isEmpty());
     }
 }
