@@ -13,7 +13,7 @@ A demo-ready prototype for an insurance Property & Casualty (P&C) auto claim pro
 
 ## Prerequisites
 
-- **Java 17+** (JDK)
+- **Java 20+** (JDK)
 - **Maven 3.9+**
 - **Node.js 20+** and npm
 - **Chrome/Chromium** (for Karma tests)

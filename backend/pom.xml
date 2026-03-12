@@ -18,7 +18,7 @@
     <description>P&amp;C Auto Claim Processing API</description>
 
     <properties>
-        <java.version>17</java.version>
+        <java.version>20</java.version>
         <springdoc.version>2.5.0</springdoc.version>
         <checkstyle.version>3.3.1</checkstyle.version>
     </properties>
