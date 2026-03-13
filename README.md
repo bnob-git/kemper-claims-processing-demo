@@ -173,6 +173,10 @@ See the `/tickets` folder for 7 Jira-style work tickets:
 - **TEST-001:** Expand regression test suite
 - **LINT-001:** Fix static analysis issues
 
+## Contributing
+
+Contributions are welcome. Please open a pull request against `main`.
+
 ## Seed Data
 
 The H2 database is populated on startup with:
