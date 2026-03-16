@@ -6,8 +6,9 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.time.LocalDate;
-import java.time.LocalDateTime;
+
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -23,8 +24,6 @@ public class ClaimService {
     private final PaymentRepository paymentRepository;
     private final UserRepository userRepository;
 
-    // INTENTIONAL CODE SMELL: unused variable (checkstyle will flag this)
-    private String lastProcessedClaimId = null;
     private static final String STATUS_OPEN = "OPEN";
 
     public ClaimService(ClaimRepository claimRepository,
@@ -115,11 +114,6 @@ public class ClaimService {
      * - THEFT (any severity) → SENIOR_ADJUSTER
      * - Everything else → ADJUSTER
      *
-     * INTENTIONAL BUG: The condition for THEFT is incorrectly checking for
-     * "Theft" (capitalized) instead of "THEFT" (uppercase enum). This means
-     * theft claims may be incorrectly assigned to a regular adjuster instead
-     * of a senior adjuster. The seed data uses uppercase "THEFT" so this
-     * bug is triggered on real claim data.
      */
     @Transactional
     public Assignment autoAssignClaim(Long claimId) {
@@ -128,11 +122,10 @@ public class ClaimService {
         String requiredRole;
         String reason;
 
-        // BUG: "Theft" should be "THEFT" to match the enum values used in data
         if ("COLLISION".equals(claim.getLossType()) && claim.getSeverityScore() >= 7) {
             requiredRole = "SENIOR_ADJUSTER";
             reason = "Collision with severity >= 7";
-        } else if ("Theft".equals(claim.getLossType())) {
+        } else if ("THEFT".equals(claim.getLossType())) {
             requiredRole = "SENIOR_ADJUSTER";
             reason = "Theft claim";
         } else {
@@ -175,11 +168,6 @@ public class ClaimService {
     /**
      * Calculate and set reserve for a claim.
      *
-     * INTENTIONAL BUG: Reserve calculation uses floating-point arithmetic
-     * instead of BigDecimal for the intermediate calculation, causing
-     * rounding errors. For example, severity 7 with base $1000:
-     * double: 7 * 1000 * 1.15 = 8049.999... which truncates incorrectly.
-     * Should use BigDecimal throughout.
      */
     @Transactional
     public Claim setReserveDecision(Long claimId, String decision, BigDecimal requestedAmount) {
@@ -190,13 +178,10 @@ public class ClaimService {
             if (requestedAmount != null) {
                 reserveAmount = requestedAmount;
             } else {
-                // BUG: using double arithmetic causes rounding issues
-                double baseAmount = 1000.0;
-                double severityMultiplier = claim.getSeverityScore();
-                double adjustmentFactor = 1.15;
-                double calculated = severityMultiplier * baseAmount * adjustmentFactor;
-                // This truncation loses precision
-                reserveAmount = BigDecimal.valueOf((long) calculated);
+                BigDecimal baseAmount = new BigDecimal("1000.00");
+                BigDecimal severityMultiplier = new BigDecimal(claim.getSeverityScore());
+                BigDecimal adjustmentFactor = new BigDecimal("1.15");
+                reserveAmount = severityMultiplier.multiply(baseAmount).multiply(adjustmentFactor).setScale(0, RoundingMode.HALF_UP);
             }
             claim.setReserveAmount(reserveAmount);
             claim.setStatus("RESERVE_SET");

@@ -104,10 +104,6 @@ export class FnolFormComponent implements OnInit {
   fnolForm!: FormGroup;
   policies: Policy[] = [];
 
-  // INTENTIONAL LINT ISSUE: console.log usage (eslint no-console rule)
-  // INTENTIONAL LINT ISSUE: unused variable (eslint no-unused-vars)
-  private debugMode = true;
-
   constructor(
     private fb: FormBuilder,
     private claimsService: ClaimsService,
@@ -132,23 +128,13 @@ export class FnolFormComponent implements OnInit {
   }
 
   onSubmit(): void {
-    // INTENTIONAL BUG: Form submits even when severity is 0 or negative
-    // because the validation check below uses a wrong condition.
-    // It checks `this.fnolForm.valid` but also has a special case that
-    // bypasses the check when lossType is "OTHER", allowing invalid
-    // severity values through for "OTHER" loss type.
-    if (this.fnolForm.valid || this.fnolForm.get('lossType')?.value === 'OTHER') {
+    if (this.fnolForm.valid) {
       const formValue = this.fnolForm.value;
       const payload = {
         ...formValue,
         lossDate: this.formatDate(formValue.lossDate),
-        // INTENTIONAL BUG: severity defaults to 0 instead of null when empty
-        // for "OTHER" loss type because the bypass above skips validation
-        severityScore: formValue.severityScore || 0
+        severityScore: formValue.severityScore
       };
-
-      // INTENTIONAL LINT: console.log will be flagged by eslint no-console rule
-      console.log('Submitting FNOL:', payload);
 
       this.claimsService.createClaim(payload).subscribe({
         next: (claim) => {
@@ -157,8 +143,7 @@ export class FnolFormComponent implements OnInit {
           });
           this.router.navigate(['/claims', claim.id]);
         },
-        error: (err) => {
-          console.log('FNOL submission error:', err);
+        error: () => {
           this.snackBar.open('Error creating claim. Please try again.', 'Close', {
             duration: 5000
           });
