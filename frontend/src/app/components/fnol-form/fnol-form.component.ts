@@ -132,19 +132,12 @@ export class FnolFormComponent implements OnInit {
   }
 
   onSubmit(): void {
-    // INTENTIONAL BUG: Form submits even when severity is 0 or negative
-    // because the validation check below uses a wrong condition.
-    // It checks `this.fnolForm.valid` but also has a special case that
-    // bypasses the check when lossType is "OTHER", allowing invalid
-    // severity values through for "OTHER" loss type.
-    if (this.fnolForm.valid || this.fnolForm.get('lossType')?.value === 'OTHER') {
+    if (this.fnolForm.valid) {
       const formValue = this.fnolForm.value;
       const payload = {
         ...formValue,
         lossDate: this.formatDate(formValue.lossDate),
-        // INTENTIONAL BUG: severity defaults to 0 instead of null when empty
-        // for "OTHER" loss type because the bypass above skips validation
-        severityScore: formValue.severityScore || 0
+        severityScore: formValue.severityScore
       };
 
       // INTENTIONAL LINT: console.log will be flagged by eslint no-console rule
