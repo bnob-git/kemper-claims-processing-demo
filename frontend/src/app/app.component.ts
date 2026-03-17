@@ -4,11 +4,12 @@ import { MatToolbarModule } from '@angular/material/toolbar';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { MatMenuModule } from '@angular/material/menu';
+import { ChatWidgetComponent } from './components/chat-widget/chat-widget.component';
 
 @Component({
   selector: 'app-root',
   standalone: true,
-  imports: [RouterOutlet, RouterLink, MatToolbarModule, MatButtonModule, MatIconModule, MatMenuModule],
+  imports: [RouterOutlet, RouterLink, MatToolbarModule, MatButtonModule, MatIconModule, MatMenuModule, ChatWidgetComponent],
   template: `
     <mat-toolbar color="primary">
       <mat-icon>shield</mat-icon>
@@ -32,6 +33,7 @@ import { MatMenuModule } from '@angular/material/menu';
     <div class="container">
       <router-outlet></router-outlet>
     </div>
+    <app-chat-widget></app-chat-widget>
   `,
   styles: [`
     .spacer { flex: 1 1 auto; }
