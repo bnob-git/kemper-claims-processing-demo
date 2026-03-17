@@ -20,9 +20,9 @@ public class ChatBotService {
     private final PolicyRepository policyRepository;
 
     private static final Pattern CLAIM_NUM =
-            Pattern.compile("CLM-[A-Z0-9]{8}", Pattern.CASE_INSENSITIVE);
+            Pattern.compile("CLM-[A-Z0-9-]{4,}", Pattern.CASE_INSENSITIVE);
     private static final Pattern POLICY_NUM =
-            Pattern.compile("POL-\\d{3}", Pattern.CASE_INSENSITIVE);
+            Pattern.compile("POL-[A-Z0-9-]{3,}", Pattern.CASE_INSENSITIVE);
 
     public ChatBotService(ClaimRepository claimRepository,
                           PolicyRepository policyRepository) {
