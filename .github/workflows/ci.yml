@@ -31,6 +31,12 @@ jobs:
         run: mvn checkstyle:check -B
         continue-on-error: true
 
+      - name: Upload JaCoCo report
+        uses: actions/upload-artifact@v4
+        with:
+          name: jacoco-report
+          path: backend/target/site/jacoco/
+
   frontend:
     name: Frontend Build & Test
     runs-on: ubuntu-latest
@@ -55,8 +61,14 @@ jobs:
         run: npm run lint
         continue-on-error: true
 
-      - name: Unit Tests
-        run: npm test
+      - name: Unit Tests with Coverage
+        run: npm run test:coverage
 
       - name: Build
         run: npm run build
+
+      - name: Upload coverage report
+        uses: actions/upload-artifact@v4
+        with:
+          name: karma-coverage-report
+          path: frontend/coverage/
