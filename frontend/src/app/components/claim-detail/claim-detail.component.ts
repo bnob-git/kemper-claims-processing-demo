@@ -16,7 +16,7 @@ import { MatSelectModule } from '@angular/material/select';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { ReactiveFormsModule, FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { ClaimsService } from '../../services/claims.service';
-import { Claim, ClaimEvent, Assignment, DocumentMetadata, Payment } from '../../models/claim.model';
+import { Claim, ClaimEvent, Assignment, DocumentMetadata, Payment, NotificationLog } from '../../models/claim.model';
 
 @Component({
   selector: 'app-claim-detail',
@@ -170,6 +170,32 @@ import { Claim, ClaimEvent, Assignment, DocumentMetadata, Payment } from '../../
           </div>
         </mat-tab>
 
+        <mat-tab label="Notifications">
+          <div style="padding: 16px;">
+            <table mat-table [dataSource]="notifications" *ngIf="notifications.length > 0" style="width: 100%;">
+              <ng-container matColumnDef="recipientEmail">
+                <th mat-header-cell *matHeaderCellDef>Recipient</th>
+                <td mat-cell *matCellDef="let n">{{n.recipientEmail}}</td>
+              </ng-container>
+              <ng-container matColumnDef="eventType">
+                <th mat-header-cell *matHeaderCellDef>Event</th>
+                <td mat-cell *matCellDef="let n">{{n.eventType}}</td>
+              </ng-container>
+              <ng-container matColumnDef="message">
+                <th mat-header-cell *matHeaderCellDef>Message</th>
+                <td mat-cell *matCellDef="let n">{{n.message}}</td>
+              </ng-container>
+              <ng-container matColumnDef="sentAt">
+                <th mat-header-cell *matHeaderCellDef>Sent At</th>
+                <td mat-cell *matCellDef="let n">{{n.sentAt}}</td>
+              </ng-container>
+              <tr mat-header-row *matHeaderRowDef="['recipientEmail','eventType','message','sentAt']"></tr>
+              <tr mat-row *matRowDef="let row; columns: ['recipientEmail','eventType','message','sentAt'];"></tr>
+            </table>
+            <p *ngIf="notifications.length === 0">No notifications sent yet.</p>
+          </div>
+        </mat-tab>
+
         <mat-tab label="Payments">
           <div style="padding: 16px;">
             <table mat-table [dataSource]="payments" *ngIf="payments.length > 0" style="width: 100%;">
@@ -211,6 +237,7 @@ export class ClaimDetailComponent implements OnInit {
   assignments: Assignment[] = [];
   documents: DocumentMetadata[] = [];
   payments: Payment[] = [];
+  notifications: NotificationLog[] = [];
   docForm!: FormGroup;
 
   constructor(
@@ -236,6 +263,7 @@ export class ClaimDetailComponent implements OnInit {
     this.claimsService.getAssignments(id).subscribe(assignments => this.assignments = assignments);
     this.claimsService.getDocuments(id).subscribe(docs => this.documents = docs);
     this.claimsService.getPayments(id).subscribe(payments => this.payments = payments);
+    this.claimsService.getNotifications(id).subscribe(n => this.notifications = n);
   }
 
   addDocument(): void {

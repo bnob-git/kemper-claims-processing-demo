@@ -1,7 +1,7 @@
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
-import { Claim, ClaimEvent, Assignment, Payment, DocumentMetadata, Policy, AppUser } from '../models/claim.model';
+import { Claim, ClaimEvent, Assignment, Payment, DocumentMetadata, Policy, AppUser, NotificationLog } from '../models/claim.model';
 
 @Injectable({ providedIn: 'root' })
 export class ClaimsService {
@@ -82,6 +82,11 @@ export class ClaimsService {
   // Close
   closeClaim(claimId: number, subrogation: boolean): Observable<Claim> {
     return this.http.post<Claim>(`${this.baseUrl}/claims/${claimId}/close`, { subrogation });
+  }
+
+  // Notifications
+  getNotifications(claimId: number): Observable<NotificationLog[]> {
+    return this.http.get<NotificationLog[]>(`${this.baseUrl}/claims/${claimId}/notifications`);
   }
 
   // Users
