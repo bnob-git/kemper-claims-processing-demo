@@ -80,3 +80,11 @@ export interface Payment {
   status: string;
   createdBy: string;
 }
+
+export interface ClaimFilter {
+  status?: string;
+  search?: string;
+  lossTypes?: string[];
+  lossDateFrom?: string;
+  lossDateTo?: string;
+}
